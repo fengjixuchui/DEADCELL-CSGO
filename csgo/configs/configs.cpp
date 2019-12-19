@@ -37,14 +37,23 @@ void reset_item( item &item ) {
 
 	if( json[ item.name.c_str( ) ].is_array( ) )
 		for( int i = 0; i < 4; i++ )
-			json[ item.name.c_str( ) ][ i ].empty( );
+			json[ item.name.c_str( ) ][ i ].clear( );
 
 	json[ item.name.c_str( ) ].clear( );
+
+	json[ "g_vars.misc.nightmode" ] = 100;
+	json[ "g_vars.misc.prop_transparency" ] = 100;
+	json[ "g_vars.visuals.effects.camera_fov" ] = 90;
+	json[ "g_vars.visuals.effects.weapon_fov" ] = 68;
 }
 
-const void c_config::init( ) {
-	if( !std::experimental::filesystem::exists( m_directory ) )
-		std::experimental::filesystem::create_directory( m_directory );
+bool c_config::init( ) {
+	if( !std::experimental::filesystem::exists( m_directory ) ) {
+		if( !std::experimental::filesystem::create_directory( m_directory ) ) {
+			_RPT1( _CRT_WARN, "Failed to create profile directory. Ignoring this error will result in not being able to create or save profiles.\n\n%s", m_directory );
+			return false;
+		}
+	}
 
 	item( g_vars.visuals.activation_type,"g_vars.visuals.activation_type", m_items );
 	item( g_vars.visuals.activation_key,"g_vars.visuals.activation_key", m_items );
@@ -73,12 +82,13 @@ const void c_config::init( ) {
 	item( g_vars.visuals.dropped_ammo, "g_vars.visuals.dropped_ammo", m_items );
 	item( g_vars.visuals.dropped_ammo_color, "g_vars.visuals.dropped_ammo_color", m_items );
 	item( g_vars.visuals.radar, "g_vars.visuals.radar", m_items );
-	item( g_vars.visuals.spread_circle, "g_vars.visuals.spread_circle", m_items );
+	item( g_vars.visuals.visualize_spread, "g_vars.visuals.visualize_spread", m_items );
+	item( g_vars.visuals.visualize_spread_color, "g_vars.visuals.visualize_spread_color", m_items );
 	item( g_vars.visuals.hitmarker, "g_vars.visuals.hitmarker", m_items );
 	item( g_vars.visuals.impact, "g_vars.visuals.impact", m_items );
 	item( g_vars.visuals.impact_color, "g_vars.visuals.impact_color", m_items );
-	item( g_vars.visuals.spread_circle_color, "g_vars.visuals.spread_circle_color", m_items );
 	item( g_vars.visuals.misc.remove_scope, "g_vars.visuals.misc.remove_scope", m_items );
+	item( g_vars.visuals.misc.remove_scope_zoom, "g_vars.visuals.misc.remove_scope_zoom", m_items );
 	item( g_vars.visuals.misc.remove_smoke, "g_vars.visuals.misc.remove_smoke", m_items );
 	item( g_vars.visuals.misc.remove_blur, "g_vars.visuals.misc.remove_blur", m_items );
 	item( g_vars.visuals.misc.scope_color, "g_vars.visuals.misc.scope_color", m_items );
@@ -126,10 +136,12 @@ const void c_config::init( ) {
 	item( g_vars.rage.teammate, "g_vars.rage.teammate", m_items );
 	item( g_vars.rage.dynamic_hitbox, "g_vars.rage.dynamic_hitbox", m_items );
 	item( g_vars.rage.primary_hitbox, "g_vars.rage.primary_hitbox", m_items );
+	item( g_vars.rage.save_fps, "g_vars.rage.save_fps", m_items );
 	item( g_vars.antiaim.enabled, "g_vars.antiaim.enabled", m_items );
 	item( g_vars.antiaim.jitter, "g_vars.antiaim.jitter", m_items );
 	item( g_vars.antiaim.pitch, "g_vars.antiaim.pitch", m_items );
 	item( g_vars.antiaim.yaw, "g_vars.antiaim.yaw", m_items );
+	item( g_vars.antiaim.side_switch_key, "g_vars.antiaim.side_switch_key", m_items );
 	item( g_vars.antiaim.left_override_key, "g_vars.antiaim.left_override_key", m_items );
 	item( g_vars.antiaim.right_override_key, "g_vars.antiaim.right_override_key", m_items );
 	item( g_vars.antiaim.backwards_override_key, "g_vars.antiaim.backwards_override_key", m_items );
@@ -143,6 +155,7 @@ const void c_config::init( ) {
 	item( g_vars.misc.thirdperson_dead, "g_vars.misc.thirdperson_dead", m_items );
 	item( g_vars.misc.thirdperson, "g_vars.misc.thirdperson", m_items );
 	item( g_vars.misc.thirdperson_key, "g_vars.misc.thirdperson_key", m_items );
+	item( g_vars.misc.flashlight_key, "g_vars.misc.flashlight_key", m_items );
 	item( g_vars.misc.autozeus, "g_vars.misc.autozeus", m_items );
 	item( g_vars.misc.log_damage, "g_vars.misc.log_damage", m_items );
 	item( g_vars.misc.log_purchases, "g_vars.misc.log_purchases", m_items );
@@ -150,8 +163,10 @@ const void c_config::init( ) {
 	item( g_vars.misc.prop_transparency, "g_vars.misc.prop_transparency", m_items );
 	item( g_vars.misc.fast_duck, "g_vars.misc.fast_duck", m_items );
 	item( g_vars.misc.dangerzone_menu, "g_vars.visuals.dangerzone_menu", m_items );
-	item( g_vars.misc.clienthitboxes, "g_vars.misc.clienthitboxes", m_items );
-	item( g_vars.misc.duration, "g_vars.visuals.duration", m_items );
+	item( g_vars.misc.client_hitboxes, "g_vars.misc.client_hitboxes", m_items );
+	item( g_vars.misc.client_hitboxes_duration, "g_vars.visuals.client_hitboxes_duration", m_items );
+	item( g_vars.misc.bullet_impacts, "g_vars.visuals.bullet_impacts", m_items );
+	item( g_vars.misc.bullet_impacts_duration, "g_vars.visuals.bullet_impacts_duration", m_items );
 	item( g_vars.dz.healthshot, "g_vars.dz.healthshot", m_items );
 	item( g_vars.dz.drone, "g_vars.dz.drone", m_items );
 	item( g_vars.dz.turret, "g_vars.dz.turret", m_items );
@@ -168,33 +183,40 @@ const void c_config::init( ) {
 	item( g_vars.dz.jammer, "g_vars.dz.jammer", m_items );
 	item( g_vars.dz.melee_weapon, "g_vars.dz.melee_weapon", m_items );
 	item( g_vars.dz.breach_charge, "g_vars.dz.breach_charge", m_items );
-}
-
-const bool c_config::save( std::string file ) {
-	std::ofstream output_file = std::ofstream( m_directory + "/" + file );
-
-	if( !output_file.good( ) )
-		return false;
-
-	for( auto &item : m_items ) {
-		save_item( item );
-	}
-
-	output_file << std::setw( 4 ) << json << std::endl;
-	output_file.close( );
 
 	return true;
 }
 
-const bool c_config::reset( std::string file ) {
+bool c_config::save( const std::string &file ) {
+	try {
+		std::ofstream output_file = std::ofstream( m_directory + "/" + file );
+
+		if( !output_file.good() )
+			return false;
+
+		for( auto &item : m_items )
+			save_item( item );
+
+		output_file << std::setw( 4 ) << json << std::endl;
+		output_file.close();
+
+		return true;
+	} 
+	catch( std::ofstream::failure &ex ) {
+		UNREFERENCED_PARAMETER( ex );
+		_RPT1( _CRT_WARN, "Failed to save the default profile. Ignoring this warning will most likely result in future profiles not being saved correctly.\n\n%s", ex.what( ) );
+		return false;
+	}
+}
+
+bool c_config::reset( const std::string &file ) {
 	std::ofstream output_file = std::ofstream( m_directory + "/" + file );
 
 	if( !output_file.good( ) )
 		return false;
 
-	for( auto &item : m_items ) {
+	for( auto &item : m_items )
 		reset_item( item );
-	}
 
 	output_file << std::setw( 4 ) << json << std::endl;
 	output_file.close( );
@@ -202,7 +224,7 @@ const bool c_config::reset( std::string file ) {
 	return true;
 }
 
-const bool c_config::load( std::string file ) {
+bool c_config::load( const std::string &file ) {
 	std::ifstream input_file = std::ifstream( m_directory + "/" + file );
 	if( !input_file.good( ) )
 		return false;
@@ -210,26 +232,28 @@ const bool c_config::load( std::string file ) {
 	try {
 		json << input_file;
 	}
-	catch( ... ) {
+	catch( const std::exception &ex ) {
+		UNREFERENCED_PARAMETER( ex );
+		_RPT2( _CRT_ERROR, "Failed to load %s profile, profile could be corrupted. Ignoring this error may prevent you from loading profiles.\n\n%s", file.c_str( ), ex.what( ) );
+
 		input_file.close( );
 		return false;
 	}
 
-	for( auto &item : m_items ) {
+	for( auto &item : m_items )
 		assign_item( item );
-	}
 
 	input_file.close( );
 
 	return true;
 }
 
-const void c_config::remove( std::string file ){
+void c_config::remove( const std::string &file ) const {
 	std::string path = m_directory  + "/" + file;
 	std::remove( path.c_str( ) );
 }
 
-std::vector< std::string > c_config::get_configs( ){
+std::vector< std::string > c_config::get_configs( ) const {
 	std::vector< std::string > output{ };
 
 	for( auto &file_path : std::experimental::filesystem::directory_iterator( m_directory ) ) {
@@ -245,19 +269,21 @@ std::vector< std::string > c_config::get_configs( ){
 	return output;
 }
 
-bool c_config::import_from_clipboard( std::string file ) {
+bool c_config::import_from_clipboard( const std::string &file ) {
 	const auto get_clipboard_data = [ ]( ) -> std::string {
-		OpenClipboard( 0 );
-		HANDLE hData = GetClipboardData( CF_TEXT );
-		char *data = static_cast< char* >( GlobalLock( hData ) );
+		OpenClipboard( nullptr );
+
+		HANDLE handle = GetClipboardData( CF_TEXT );
+		const auto data = static_cast< char* >( GlobalLock( handle ) );
+
 		std::string text( data );
-		GlobalUnlock( hData );
+		GlobalUnlock( handle );
 		CloseClipboard( );
 
 		return text;
 	};
 
-	std::string clipboard = get_clipboard_data( );
+	const std::string clipboard = get_clipboard_data( );
 
 	std::ofstream output = std::ofstream( m_directory + "/" + file );
 	if( !output.good( ) )
@@ -269,7 +295,6 @@ bool c_config::import_from_clipboard( std::string file ) {
 	// write clipboard data to the file
 	output << clipboard;
 
-
 	// close the file after writing
 	output.close( );
 
@@ -279,7 +304,7 @@ bool c_config::import_from_clipboard( std::string file ) {
 	return true;
 }
 
-void c_config::export_to_clipboard( std::string file ) {
+void c_config::export_to_clipboard( const std::string &file ) const {
 	std::ifstream input_file = std::ifstream( m_directory + "/" + file );
 	std::string str( ( std::istreambuf_iterator< char >( input_file ) ), std::istreambuf_iterator< char >( ) );
 
@@ -290,7 +315,7 @@ void c_config::export_to_clipboard( std::string file ) {
 	memcpy( GlobalLock( mem ), output, len );
 
 	GlobalUnlock( mem );
-	OpenClipboard( 0 );
+	OpenClipboard( nullptr );
 	EmptyClipboard( );
 	SetClipboardData( CF_TEXT, mem );
 	CloseClipboard( );

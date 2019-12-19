@@ -5,7 +5,7 @@ class vec3_t
 public:
 	vec3_t( void )
 	{
-		Invalidate( );
+		invalidate( );
 	}
 
 	vec3_t( float X, float Y, float Z )
@@ -22,17 +22,17 @@ public:
 		z = clr [ 2 ];
 	}
 
-	void Init( float ix = 0.0f, float iy = 0.0f, float iz = 0.0f )
+	void init( float ix = 0.0f, float iy = 0.0f, float iz = 0.0f )
 	{
 		x = ix; y = iy; z = iz;
 	}
 
-	bool IsValid( ) const
+	bool is_valid( ) const
 	{
 		return std::isfinite( x ) && std::isfinite( y ) && std::isfinite( z );
 	}
 
-	void Invalidate( )
+	void invalidate( )
 	{
 		x = y = z = std::numeric_limits< float >::infinity( );
 	}
@@ -47,7 +47,7 @@ public:
 		return ( ( float* ) this ) [ i ];
 	}
 
-	void Zero( )
+	void zero( )
 	{
 		x = y = z = 0.0f;
 	}
@@ -67,6 +67,25 @@ public:
 		x += v.x; y += v.y; z += v.z;
 		return *this;
 	}
+
+	vec3_t& operator+=( const float& v )
+	{
+		x += v; y += v; z += v;
+		return *this;
+	}
+
+	vec3_t& operator+( const float& v )
+	{
+		x = x + v; y = y + v; z = z + v;
+		return *this;
+	}
+
+	vec3_t& operator-( const float& v )
+	{
+		x = x - v; y = y - v; z = z - v;
+		return *this;
+	}
+
 
 	vec3_t& operator-=( const vec3_t& v )
 	{
@@ -122,11 +141,11 @@ public:
 		return *this;
 	}
 
-	void Normalize( ) {
-		*this /= Length( );
+	void normalize( ) {
+		*this /= length( );
 	}
 
-	float DistTo( const vec3_t &vOther ) const
+	float distance( const vec3_t &vOther ) const
 	{
 		vec3_t delta;
 
@@ -134,16 +153,16 @@ public:
 		delta.y = y - vOther.y;
 		delta.z = z - vOther.z;
 
-		return delta.Length( );
+		return delta.length( );
 	}
 
-	vec3_t Normalized( ) const {
+	vec3_t normalized( ) const {
 		vec3_t vec = *this;
-		vec.Normalize();
+		vec.normalize();
 		return vec;
 	}
 
-	float DistToSqr( const vec3_t &vOther ) const
+	float dist_to_sqr( const vec3_t &vOther ) const
 	{
 		vec3_t delta;
 
@@ -151,25 +170,35 @@ public:
 		delta.y = y - vOther.y;
 		delta.z = z - vOther.z;
 
-		return delta.LengthSqr( );
+		return delta.length_sqr( );
 	}
 
-	float Dot( const vec3_t &vOther ) const
+	float dot( const vec3_t &vOther ) const
 	{
 		return ( x * vOther.x + y * vOther.y + z * vOther.z );
 	}
 
-	float Length( ) const
+	vec3_t cross_product( const vec3_t& a, const vec3_t& b ) const
+	{
+		return vec3_t( a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x );
+	}
+
+	vec3_t cross( const vec3_t& vOther ) const
+	{
+		return cross_product( *this, vOther );
+	}
+
+	float length( ) const
 	{
 		return sqrt( x * x + y * y + z * z );
 	}
 
-	float LengthSqr( void ) const
+	float length_sqr( void ) const
 	{
 		return ( x * x + y * y + z * z );
 	}
 
-	float Length2D( ) const
+	float length_2d( ) const
 	{
 		return sqrt( x * x + y * y );
 	}
@@ -214,17 +243,17 @@ public:
 	{
 		return vec3_t( x / v.x, y / v.y, z / v.z );
 	}
-	inline float NormalizeL()
+	inline float normalize_l()
 	{
 		vec3_t res = *this;
-		float length = res.Length();
+		float length = res.length();
 		if ( length != 0.0f )
 			res /= length;
 		else
 			res.x = res.y = res.z = 0.0f;
 		return length;
 	}
-	inline vec3_t Clamp()
+	inline vec3_t clamp()
 	{
 		if ( this->x < -89.0f )
 			this->x = -89.0f;
@@ -246,32 +275,32 @@ public:
 	float x, y, z;
 };
 
-class __declspec( align( 16 ) ) vectorAligned : public vec3_t
+class __declspec( align( 16 ) ) vector_aligned : public vec3_t
 {
 public:
-	inline vectorAligned( void )
+	inline vector_aligned( void )
 	{ };
 
-	inline vectorAligned( float X, float Y, float Z )
+	inline vector_aligned( float X, float Y, float Z )
 	{
-		Init( X, Y, Z );
+		init( X, Y, Z );
 	}
 
 public:
-	explicit vectorAligned( const vec3_t &vOther )
+	explicit vector_aligned( const vec3_t &vOther )
 	{
-		Init( vOther.x, vOther.y, vOther.z );
+		init( vOther.x, vOther.y, vOther.z );
 	}
 
-	vectorAligned& operator=( const vec3_t &vOther )
+	vector_aligned& operator=( const vec3_t &vOther )
 	{
-		Init( vOther.x, vOther.y, vOther.z );
+		init( vOther.x, vOther.y, vOther.z );
 		return *this;
 	}
 
-	vectorAligned& operator=( const vectorAligned &vOther )
+	vector_aligned& operator=( const vector_aligned &vOther )
 	{
-		Init( vOther.x, vOther.y, vOther.z );
+		init( vOther.x, vOther.y, vOther.z );
 		return *this;
 	}
 

@@ -3,9 +3,9 @@
 class c_client {
 private:
 public:
-	CUserCmd     *m_cmd = nullptr;
-	C_CSPlayer   *m_local = nullptr;
-	ConVar       *c4_timer = nullptr;
+	c_user_cmd     *m_cmd = nullptr;
+	c_csplayer   *m_local = nullptr;
+	cvar       *c4_timer = nullptr;
 	void         *m_context = nullptr;
 
 	vec3_t       m_last_sent_origin;
@@ -15,7 +15,8 @@ public:
 	int          m_ur;
 	bool         m_should_update_materials = false;
 	int          m_server_update_rate;
-	bool         m_under_server_tick_rate;
+	bool         m_under_tickrate;
+	int          m_client_framerate;
 	float        m_hitmarker_alpha;
 	int          m_pen_crosshair = 0;
 

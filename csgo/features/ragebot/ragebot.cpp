@@ -1,11 +1,11 @@
 #include "ragebot.h"
+#include "../animations/anim.h"
+#include "../geometry/geometry.h"
 
 c_ragebot g_ragebot;
 
-void c_ragebot::work( CUserCmd * cmd ) {
-	m_players.clear( );
-
-	if ( !g_vars.rage.enabled )
+void c_ragebot::work( c_user_cmd *cmd ) {
+	if( !g_vars.rage.enabled )
 		return;
 
 	if( g_vars.rage.key && !g_input.key_pressed( g_vars.rage.key ) )
@@ -14,32 +14,53 @@ void c_ragebot::work( CUserCmd * cmd ) {
 	m_cmd = cmd;
 
 	select_target( );
-
 	choose_angles( );
+	restore_players( );
+
+	if ( !m_players.empty( ) )
+		m_players.clear( );
 }
 
 void c_ragebot::select_target( ) {
-	auto local = C_CSPlayer::get_local( );
+	auto local = c_csplayer::get_local( );
 	if( !local || !local->alive( ) )
 		return;
 
 	auto weapon = local->get_active_weapon( );
-	if( !weapon )
+	if( !weapon || weapon->clip( ) <= 0 )
 		return;
 
-	auto wpn_index = weapon->item_index( );
+	auto bounding_check = [ this, local ]( c_csplayer *e, const lag_record_t &record, float min_dmg ) -> bool {
+		auto *studio_hdr = e->model_ptr( )->m_studio_hdr;
+		if( !studio_hdr )
+			return false;
 
-	if( wpn_index == WEAPON_FISTS
-		|| wpn_index == WEAPON_SPANNER
-		|| wpn_index == WEAPON_HAMMER
-		|| wpn_index == WEAPON_AXE
-		|| wpn_index == WEAPON_MELEE
-		|| wpn_index == WEAPON_BREACHCHARGE
-		|| wpn_index == WEAPON_TABLET )
-		return;
+		auto head_hitbox = studio_hdr->hitbox( head, 0 );
+		if( !head_hitbox )
+			return false;
+
+		const auto bbmin = record.m_mins + record.m_origin;
+		const auto bbmax = record.m_maxs + record.m_origin;
+
+		vec3_t points[ 7 ];
+		points[ 0 ] = bbmax;
+		points[ 1 ] = ( bbmin + bbmax ) * 0.5f;
+		points[ 2 ] = ( head_hitbox->bb_min + head_hitbox->bb_max ) * 0.5f;
+		points[ 3 ] = vec3_t( ( bbmax.x + bbmin.x ) * 0.5f, ( bbmax.y + bbmin.y ) * 0.5f, bbmin.z );
+		points[ 4 ] = vec3_t( bbmax.x, bbmin.y, bbmax.z );
+		points[ 5 ] = vec3_t( bbmin.x, bbmin.y, bbmax.z );
+		points[ 6 ] = vec3_t( bbmin.x, bbmax.y, bbmax.z );
+
+		for( const auto &p : points ) {
+			if( g_autowall.think( p, e, 1, true ) )
+				return true;
+		}
+
+		return false;
+	};
 
 	try {
-		std::vector< int > hitboxes = { };
+		std::vector< int > hitboxes = {};
 		hitboxes.push_back( g_vars.rage.primary_hitbox );
 
 		if( g_vars.rage.dynamic_hitbox ) {
@@ -61,19 +82,19 @@ void c_ragebot::select_target( ) {
 			hitboxes.push_back( r_calf );
 			hitboxes.push_back( l_foot );
 			hitboxes.push_back( r_foot );
-		} 
+		}
 		else {
-			if( g_vars.rage.hitbox_head ){
+			if( g_vars.rage.hitbox_head ) {
 				hitboxes.push_back( head );
 				hitboxes.push_back( neck );
 			}
-			if( g_vars.rage.hitbox_pelvis ){
+			if( g_vars.rage.hitbox_pelvis ) {
 				hitboxes.push_back( l_chest );
 				hitboxes.push_back( u_chest );
 				hitboxes.push_back( thorax );
 				hitboxes.push_back( pelvis );
 			}
-			if( g_vars.rage.hitbox_arms ){
+			if( g_vars.rage.hitbox_arms ) {
 				hitboxes.push_back( l_upperarm );
 				hitboxes.push_back( r_upperarm );
 				hitboxes.push_back( l_forearm );
@@ -81,7 +102,7 @@ void c_ragebot::select_target( ) {
 				hitboxes.push_back( l_hand );
 				hitboxes.push_back( r_hand );
 			}
-			if( g_vars.rage.hitbox_legs ){
+			if( g_vars.rage.hitbox_legs ) {
 				hitboxes.push_back( l_thigh );
 				hitboxes.push_back( r_thigh );
 				hitboxes.push_back( l_calf );
@@ -91,43 +112,58 @@ void c_ragebot::select_target( ) {
 			}
 		}
 
-		for ( int i = 1; i <= g_csgo.m_global_vars->m_max_clients; ++i ) {
-			auto e = g_csgo.m_entity_list->Get< C_CSPlayer >( i );
-
+		for( auto &entry : g_listener.m_players ) {
+			int idx = entry.m_idx;
+			c_csplayer *e = entry.m_player;
 			if( !is_valid( e ) )
 				continue;
 
+			lag_record_t player_record;
 			float player_best_damage = 0.f;
 			vec3_t player_best_point = vec3_t( 0.f, 0.f, 0.f );
-			std::array< matrix3x4_t, 128 > _bones = { };
-			
-			if( !e->SetupBones( _bones.data( ), 128, 0x100, e->simtime( ) + g_csgo.m_global_vars->m_interval_per_tick ) )
+
+			const int best_min_dmg = local->get_active_weapon( )->clip( ) <= 3 ? e->health( ) : g_vars.rage.min_dmg; // ensure we get the kill
+			std::deque< lag_record_t > best_records;
+			if( !get_best_records( e, best_records ) )
 				continue;
 
-			std::vector< vec3_t > points;
-			if( !get_points_from_hitbox( e, hitboxes, _bones, points, ( g_vars.rage.pointscale / 100.f ) ) )
-				continue;
+			for( size_t i = 0; i < best_records.size(); ++i ) {
+				auto record = best_records.at( i );
 
-			if( points.empty( ) )
-				continue;
+				if( !record.is_valid( ) )
+					continue;
 
-			for( auto& p : points ) {
-				if( g_vars.visuals.extra.points )
-					g_csgo.m_debug_overlay->AddBoxOverlay( p, vec3_t( -0.7f, -0.7f, -0.7f ), vec3_t( 0.7f, 0.7f, 0.7f ), vec3_t( 0.f, 0.f, 0.f ), 0, 255, 0, 100, g_csgo.m_global_vars->m_interval_per_tick * 2 );
+				if( !g_backtrack.restore( e, record ) )
+					continue;
 
-				if ( g_autowall.think( p, e, g_vars.rage.min_dmg, true ) ) {
-					if( g_autowall.m_autowall_dmg > player_best_damage ) {
-						player_best_damage = g_autowall.m_autowall_dmg;
-						player_best_point = p;
+				if( g_vars.rage.save_fps && !bounding_check( e, record, best_min_dmg ) )
+					continue;
+
+				std::vector< vec3_t > points;
+				if( !get_points_from_hitbox( e, hitboxes, record.m_matrix, points, best_records, i, g_vars.rage.pointscale / 100.f ) )
+					continue;
+
+				if( points.empty( ) )
+					continue;
+
+				for( auto &p : points ) {
+					if( g_vars.visuals.extra.points )
+						g_csgo.m_debug_overlay->add_box_overlay( p, vec3_t( -0.7f, -0.7f, -0.7f ), vec3_t( 0.7f, 0.7f, 0.7f ), vec3_t( 0.f, 0.f, 0.f ), 0, 255, 0, 100, g_csgo.m_global_vars->m_interval_per_tick * 2 );
+
+					if( g_autowall.think( p, e, best_min_dmg, true ) ) {
+						if( g_autowall.m_autowall_dmg > player_best_damage ) {
+							player_best_damage = g_autowall.m_autowall_dmg;
+							player_best_point = p;
+							player_record = record;
+						}
 					}
 				}
 			}
-			float distance = e->abs_origin( ).DistTo( local->abs_origin( ) );
-			rage_t data = rage_t( e, i, static_cast< int >( player_best_damage ), player_best_point, distance, _bones );
-			m_players.push_back( data );
+
+			m_players.emplace_back( e, player_record, idx, static_cast< int >( player_best_damage ), player_best_point, e->abs_origin( ).distance( local->abs_origin( ) ) );
 		}
 
-		std::sort( m_players.begin( ), m_players.end( ), [ & ] ( rage_t &a, rage_t &b ) {
+		std::sort( m_players.begin( ), m_players.end( ), [ & ]( rage_t &a, rage_t &b ) {
 			switch( g_vars.rage.target_selection ) {
 				case 0:
 					return a.m_damage > b.m_damage;
@@ -135,56 +171,70 @@ void c_ragebot::select_target( ) {
 					return a.distance < b.distance;
 				case 2:
 					return a.index < b.index;
-				default: break;
+				default:
+					return false;
 			}
 		} );
 	}
-	catch( ... ) {
-		console::print( "caught exception in select_target( )" );
+	catch( const std::out_of_range &ex ) {
+		UNREFERENCED_PARAMETER( ex );
+		_RPT0( _CRT_ERROR, ex.what( ) );
 	}
 }
 
-bool c_ragebot::hitchance( vec3_t &angle, C_CSPlayer *ent ) {
+void c_ragebot::restore_players( ) {
+	for( auto entry : g_listener.m_players ) {
+		int idx = entry.m_idx;
+		c_csplayer *e = entry.m_player;
+		if( !is_valid( e ) )
+			continue;
+
+		auto &records = g_backtrack.get( idx )->m_records;
+		if( !records.empty( ) )
+			g_backtrack.restore( e, records.front( ) );
+	}
+}
+
+bool c_ragebot::hitchance( vec3_t &angle, c_csplayer *ent ) {
 	int traces_hit = 0;
-	auto local = C_CSPlayer::get_local( );
+	auto local = c_csplayer::get_local( );
 	if( !local )
 		return false;
 
 	vec3_t forward, right, up;
 	const vec3_t eye_position = local->eye_pos( );
-	math::angle_to_vectors( angle + local->punch_angle( ) * 2.f, &forward, &right, &up );// maybe add an option to not account for punch.
+	math::angle_to_vectors( angle + local->punch_angle( ) * 2.f, &forward, &right, &up ); // maybe add an option to not account for punch.
 
-	C_BaseCombatWeapon *weapon = local->get_active_weapon( );
-	if ( !weapon )
+	c_base_combat_weapon *weapon = local->get_active_weapon( );
+	if( !weapon )
 		return false;
 
 	weapon->update_accuracy( );
 	float weapon_spread = weapon->spread( );
 	float weapon_cone = weapon->inaccuracy( );
 
-	const auto get_bullet_location = [ & ] ( int seed ) {
-		static auto random_seed = reinterpret_cast< void( *)( int ) >( GetProcAddress( GetModuleHandleA( "vstdlib.dll" ), "RandomSeed" ) );
+	const auto get_bullet_location = [ & ]( int seed ) {
+		static auto random_seed = pe::get_export< void( *)( int ) >( pe::get_module( "vstdlib.dll" ), "RandomSeed" );
 		random_seed( seed );
 
-
-		float a = util::misc::get_random_float_range( 0.f, 1.f );
-		float b = util::misc::get_random_float_range( 0.f, 2.f * math::pi );
-		float c = util::misc::get_random_float_range( 0.f, 1.f );
-		float d = util::misc::get_random_float_range( 0.f, 2.f * math::pi );
+		float a = math::random_float( 0.f, 1.f );
+		float b = math::random_float( 0.f, 2.f * math::pi );
+		float c = math::random_float( 0.f, 1.f );
+		float d = math::random_float( 0.f, 2.f * math::pi );
 
 		const float generated_spread = a * weapon_spread;
 		const float generated_cone = c * weapon_cone;
 
-		const vec3_t spread = vec3_t (
+		const vec3_t spread = vec3_t(
 			std::cos( b ) * generated_spread + std::cos( d ) * generated_cone,
 			std::sin( b ) * generated_spread + std::sin( d ) * generated_cone,
 			0.f
 		);
 
-		return vec3_t ( forward + right * -spread.x + up * -spread.y ).Normalized( );
+		return vec3_t( forward + right * -spread.x + up * -spread.y ).normalized( );
 	};
 
-	for ( int i = 1; i <= 256; i++ ) {
+	for( int i = 1; i <= 256; i++ ) {
 		vec3_t spread_angle;
 		vec3_t bullet_end;
 
@@ -192,26 +242,28 @@ bool c_ragebot::hitchance( vec3_t &angle, C_CSPlayer *ent ) {
 		math::angle_to_vector( angle - ( spread_angle - angle ), bullet_end );
 
 		trace_t trace;
-		Ray_t ray;
+		ray_t ray;
 		ray.init( eye_position, eye_position + bullet_end * weapon->get_weapon_info( )->range );
-		g_csgo.m_engine_trace->ClipRayToEntity( ray, MASK_SHOT, ent, &trace );
 
-		if ( trace.hit_entity == ent )
+		g_csgo.m_engine_trace->clip_ray_to_entity( ray, MASK_SHOT, ent, &trace );
+
+		if( trace.m_hit_entity == ent )
 			++traces_hit;
 
-		if ( traces_hit >= static_cast< int >( g_vars.rage.hitchance * 2.56f ) )
+		if( traces_hit >= static_cast< int >( g_vars.rage.hitchance * 2.56f ) )
 			return true;
 	}
 
 	return false;
 }
 
-void c_ragebot::choose_angles( ){
-	C_CSPlayer*		selected_target = nullptr;
-	vec3_t			best_hitboxpos;
-	float			best_damage = 0.f;
+void c_ragebot::choose_angles( ) {
+	c_csplayer *selected_target = nullptr;
+	lag_record_t best_record{};
+	vec3_t best_hitboxpos;
+	float best_damage = 0.f;
 
-	auto local = C_CSPlayer::get_local( );
+	auto local = c_csplayer::get_local( );
 	if( !local || !local->alive( ) )
 		return;
 
@@ -219,51 +271,45 @@ void c_ragebot::choose_angles( ){
 	if( !weapon )
 		return;
 
-	std::array< matrix3x4_t, 128 > mat;
-
-	for ( auto &data : m_players ) {
+	for( auto &data : m_players ) {
 		auto target = data.m_player;
 
-		auto calc_damage = [ & ] (  ) {
+		auto calc_damage = [ & ]( ) {
+			lag_record_t player_record = data.m_record;
 			float player_best_damage = data.m_damage;
 			vec3_t player_best_point = data.m_bestpoint;
 
-			if ( player_best_damage > best_damage ) {
+			if( player_best_damage > best_damage ) {
 				selected_target = target;
+				best_record = player_record;
 				best_hitboxpos = player_best_point;
 				best_damage = player_best_damage;
-				mat = data.mat;
 			}
-			if ( player_best_damage >= target->health( ) ) {
+			if( player_best_damage >= target->health( ) ) {
 				selected_target = target;
+				best_record = player_record;
 				best_hitboxpos = player_best_point;
 				best_damage = player_best_damage;
-				mat = data.mat;
 				return true;
 			}
 			return false;
 		};
-		
-		if( calc_damage( ) ) {
+
+		if( calc_damage( ) )
 			break;
-		}
-		
 	}
-	if ( !selected_target )
+	if( !selected_target )
 		return;
 
 	m_last_target = selected_target;
 
-	if ( !local->can_shoot( weapon ) )
-		return;
-
-	if( g_vars.rage.autoscope == 1 && ( !local->is_scoped( ) && weapon->has_scope( ) ) && selected_target ) 
+	if( g_vars.rage.autoscope == 1 && ( !local->is_scoped( ) && weapon->has_scope( ) ) && selected_target )
 		m_cmd->m_buttons |= IN_ATTACK2;
 
 	vec3_t aim_angle = math::calc_angle( local->eye_pos( ), best_hitboxpos );
-	aim_angle.Clamp( );
+	aim_angle.clamp( );
 
-	if( !hitchance( aim_angle, selected_target ) ){
+	if( !hitchance( aim_angle, selected_target ) ) {
 		if( g_vars.rage.autoscope == 2 && ( !local->is_scoped( ) && weapon->has_scope( ) ) )
 			m_cmd->m_buttons |= IN_ATTACK2;
 
@@ -274,101 +320,111 @@ void c_ragebot::choose_angles( ){
 			return;
 	}
 
+
+	if( !local->can_shoot( weapon ) )
+		return;
+
 	if( g_vars.rage.auto_fire && !( m_cmd->m_buttons & IN_ATTACK ) ) {
 		m_cmd->m_buttons |= IN_ATTACK;
 		shots_fired++;
 	}
-	
-	const WeaponInfo_t *wep_info = weapon->get_weapon_info( );
-	if( wep_info->type == WEAPONTYPE_PISTOL && !wep_info->full_auto ){
-		float next_wep_attack = weapon->next_attack( ) - g_csgo.m_global_vars->m_cur_time;
-		float next_local_attack = local->next_attack( ) - g_csgo.m_global_vars->m_cur_time;
-		if ( next_wep_attack >= 0.f || next_local_attack >= 0.f )
-			m_cmd->m_buttons &= ~IN_ATTACK;
-		else
-			m_cmd->m_buttons |= IN_ATTACK;
-	}
 
-	if( m_cmd->m_buttons & IN_ATTACK ){
+	if( m_cmd->m_buttons & IN_ATTACK ) {
 		m_cmd->m_viewangles = aim_angle;
 
 		weapon->update_accuracy( );
 		m_cmd->m_viewangles -= local->punch_angle( ) * 2.f;
 
-		if( g_vars.misc.clienthitboxes )
-			g_misc.capsule_overlay( selected_target, g_vars.misc.duration, mat );
+		if( !g_vars.rage.silent )
+			g_csgo.m_engine->set_viewangles( m_cmd->m_viewangles );
 
-		if( !g_vars.rage.silent ){
-			g_csgo.m_engine->SetViewAngles( m_cmd->m_viewangles );
-		}
+		if( g_vars.misc.client_hitboxes )
+			g_misc.capsule_overlay( selected_target, g_vars.misc.client_hitboxes_duration, best_record.m_matrix );
+
+		g_backtrack.process_cmd( m_cmd, selected_target, best_record );
 	}
 }
 
-std::vector< lag_record_t > c_ragebot::get_best_records( std::deque< lag_record_t > records ){
-	std::vector< lag_record_t > output{ };
-	for( size_t i = 0; i < records.size( ); ++i ){
-		auto lag_record = records.at( i );
+bool c_ragebot::get_best_records( c_csplayer *e, std::deque< lag_record_t > &out ) {
+	if( !e || !g_cl.m_local )
+		return false;
 
-	}
+	out = g_backtrack.get( e->get_index( ) )->m_records;
 
-	return output;
+	out.erase( std::find_if( out.begin( ), out.end( ), [ ]( lag_record_t &record ) {
+		return !record.is_valid( );
+	} ), out.end( ) );
+
+	out.erase( std::unique( out.begin( ), out.end( ), [ ]( lag_record_t &a, lag_record_t &b ) {
+		return ( a.m_angles == b.m_angles && a.m_origin == b.m_origin ) || a.m_origin.distance( b.m_origin ) < 15.f;
+	} ), out.end( ) );
+
+	return true;
 }
 
-bool c_ragebot::get_points_from_hitbox( C_CSPlayer *e, std::vector< int > hitboxes, std::array< matrix3x4_t, 128 > matrix, std::vector< vec3_t >& points, float scale ) {
-	if ( !e )
+bool c_ragebot::get_points_from_hitbox( c_csplayer *e, std::vector< int > hitboxes, matrix3x4_t *matrix, std::vector< vec3_t > &points, const std::deque< lag_record_t > &sorted_records, size_t record_idx, float scale ) {
+	if( !e )
 		return false;
 
-	auto *studiohdr = e->studio_hdr( );
-	if ( !studiohdr )
+	auto *studiohdr = e->model_ptr( )->m_studio_hdr;
+	if( !studiohdr )
 		return false;
 
-	auto local = C_CSPlayer::get_local( );
+	auto local = c_csplayer::get_local( );
 	if( !local )
 		return false;
 
 	try {
 		for( size_t idx = 0; idx < hitboxes.size( ); ++idx ) {
 			int h = hitboxes.at( idx );
-			auto *bbox = studiohdr->pHitbox( h, 0 );
+			auto *bbox = studiohdr->hitbox( h, 0 );
+
+			// philip015's old hack
+			float mod = bbox->m_flRadius != -1.f ? bbox->m_flRadius : 0.f;
 
 			vec3_t max, min;
-			math::vector_transform( bbox->bb_min, matrix.at( bbox->bone_index ), min );
-			math::vector_transform( bbox->bb_max, matrix.at( bbox->bone_index ), max );
+			math::vector_transform( bbox->bb_min - mod, matrix[ bbox->bone_index ], min );
+			math::vector_transform( bbox->bb_max + mod, matrix[ bbox->bone_index ], max );
 			auto center = ( min + max ) / 2.f;
 
 			points.push_back( center );
-			
+
+			auto angle = math::calc_angle( center, local->eye_pos( ) );
+
+			vec3_t forward;
+			math::angle_to_vector( angle, forward );
+
+			vec3_t right = forward.cross( vec3_t( 0, 0, 1 ) );
+			vec3_t left = vec3_t( -right.x, -right.y, right.z );
+
+			vec3_t top = vec3_t( 0, 0, 1 );
+			vec3_t bot = vec3_t( 0, 0, -1 );
 
 			// don't bother multipointing if body/head is visible.
-			// pretty sure this is called dynamic hitboxes in aimware.
 			if( g_vars.rage.dynamic_hitbox ) {
-				// get current framerate
-				static float framerate;
-				framerate = 0.9 * framerate + ( 1.0 - 0.9 ) * g_csgo.m_global_vars->m_absolute_frametime;
-
-				// framerate is lower than the servers, start optimizing points.
-				if( g_cl.m_under_server_tick_rate && m_last_target ) {
-					// check if we're aiming at the same target and if we are lets only multipoint this target until they are no longer the target.
-					if( e != m_last_target )
+				if( g_cl.m_under_tickrate && m_last_target ) {
+					if( e != m_last_target ) { // check if we're aiming at the same target and only multipoint this target.
 						continue;
+					}
 				}
 
 				if( hitboxes.empty( ) || points.empty( ) )
-					return false; // return false, we have nowhere to aim at
+					return false;
 
 				if( points.size( ) >= hitboxes.size( ) ) {
 					switch( h ) {
 						case head:
-						case neck:		
+						case neck:
 						case l_chest:
 						case u_chest:
 						case thorax:
 						case pelvis:
 							break;
-						default: continue;
+						default:
+							continue;
 					}
 
-					if( e->is_visible( e, local->eye_pos( ), points.at( head ), MASK_SHOT, local ) 
+					if( e->is_visible( e, local->eye_pos( ), points.at( head ), MASK_SHOT, local )
 						|| e->is_visible( e, local->eye_pos( ), points.at( pelvis ), MASK_SHOT, local ) )
 						return true;
 				}
@@ -376,7 +432,7 @@ bool c_ragebot::get_points_from_hitbox( C_CSPlayer *e, std::vector< int > hitbox
 
 			if( g_vars.rage.bodyaim_lethal && e->health( ) < local->get_active_weapon( )->get_weapon_info( )->damage ) {
 				hitboxes.at( 0 ) = pelvis;
-			}	
+			}
 
 			if( g_vars.rage.prefer_bodyaim ) {
 				if( !( e->flags( ) & FL_ONGROUND ) || e->health( ) < 50 ) {
@@ -384,77 +440,86 @@ bool c_ragebot::get_points_from_hitbox( C_CSPlayer *e, std::vector< int > hitbox
 				}
 			}
 
+			if( scale == 0.f )
+				continue;
+
+			// optimize points on certain records.
+			bool should_multipoint = true;
+			if( g_vars.rage.selectively_multipoint_records ) {
+				// only use multipoint settings on the first/last 2 records.
+				const auto records_size = sorted_records.size( );
+				if( records_size > 5 ) {		
+					// first two
+					if( record_idx == 0 || record_idx == 1 )
+						should_multipoint = true;
+					// last two
+					else if( record_idx == records_size - 1 || record_idx == records_size - 2 )
+						should_multipoint = true;
+					else
+						should_multipoint = false;
+				}				
+			}
+
 			switch( h ) {
 				case head:
-				case neck:		
-					if( !g_vars.rage.head )
+					if( !g_vars.rage.head || !should_multipoint )
 						continue;
 					break;
 				case l_chest:
 				case u_chest:
-				case thorax:
 				case pelvis:
-					if( !g_vars.rage.pelvis )
+					if( !g_vars.rage.pelvis || !should_multipoint ) // should always multipoint the torso regardless of the selective multipoint option.
 						continue;
 					break;
 				case l_upperarm:
 				case r_upperarm:
-					if( !g_vars.rage.arms )
+					if( !g_vars.rage.arms || !should_multipoint )
 						continue;
 					break;
 				case l_thigh:
 				case r_thigh:
-				case l_foot:
-				case r_foot:
-					if( !g_vars.rage.legs )
+					if( !g_vars.rage.legs || !should_multipoint )
 						continue;
 					break;
-				default: continue;
+				default:
+					continue;
 			}
+
+			float rs = bbox->m_flRadius * scale;
 
 			if( bbox->m_flRadius == -1.f ) {
-				/*points.push_back( vec3_t( bbox->bb_min.x, bbox->bb_min.y, bbox->bb_min.z ) * scale );
-				points.push_back( vec3_t( bbox->bb_min.x, bbox->bb_max.y, bbox->bb_min.z ) * scale );
-				points.push_back( vec3_t( bbox->bb_max.x, bbox->bb_max.y, bbox->bb_min.z ) * scale );
-				points.push_back( vec3_t( bbox->bb_max.x, bbox->bb_min.y, bbox->bb_min.z ) * scale );*/
+	
 			}
-			else if( bbox->m_flRadius > 0.f ) { // pill.
-				float length = ( bbox->bb_min - bbox->bb_max ).Length( ) + bbox->m_flRadius * 2.f;
+			else if( bbox->m_flRadius > 0.f ) {
+				//// pill.
+				if( h == head )
+					points.push_back( center + top * rs );
 
-				if( h != l_upperarm && h != r_upperarm && h != l_thigh && h != r_thigh ) {
-					points.push_back( center + vec3_t( length / 3.f, 0.f, 0.f ) );
-					points.push_back( center - vec3_t( length / 3.f, 0.f, 0.f ) );
-				}
-
-				if( h != l_chest && h != u_chest )
-					points.push_back( center + vec3_t( 0.f, 0.f, bbox->m_flRadius * scale ) ); // top
-
-				if( h != u_chest && h != l_chest && h != thorax )
-					points.push_back( center - vec3_t( 0.f, 0.f, bbox->m_flRadius * scale ) ); // bottom
-
-				points.push_back( center + vec3_t( 0.f, bbox->m_flRadius * scale, 0.f ) ); // front center
-				points.push_back( center - vec3_t( 0.f, bbox->m_flRadius * scale, 0.f ) ); // back center	
+				points.push_back( center + right * rs );
+				points.push_back( center + left * rs );
+				
 			}
 		}
 	}
-	catch( ... ) {
-		console::print( "caught exception in get_points_from_hitbox( )" );
+	catch( const std::exception &ex ) {
+		UNREFERENCED_PARAMETER( ex );
+		_RPTF0( _CRT_ERROR, ex.what( ) );
 	}
 
 	return true;
 }
 
-void c_ragebot::quickstop( C_BaseCombatWeapon *local_weapon ) {
-	const WeaponInfo_t *weapon_info = local_weapon->get_weapon_info( );
+void c_ragebot::quickstop( c_base_combat_weapon *local_weapon ) {
+	const weapon_info_t *weapon_info = local_weapon->get_weapon_info( );
 	if( !weapon_info )
 		return;
 
 	// note: scoped weapons use the alternate speed member.
-	float max_speed = local_weapon->has_scope( ) ? weapon_info->max_speed_alt : weapon_info->max_speed;
+	const float max_speed = local_weapon->has_scope( ) ? weapon_info->max_speed_alt : weapon_info->max_speed;
 
-	if( g_misc.unpredicted_vel.Length2D( ) > max_speed * .34f ) {
-		vec3_t velocity = g_misc.unpredicted_vel;
-		float_t speed = g_cl.m_local->velocity( ).Length( );
+	if( g_misc.unpredicted_vel.length_2d( ) > max_speed * .34f ) {
+		const vec3_t velocity = g_misc.unpredicted_vel;
+		const float_t speed = g_cl.m_local->velocity( ).length( );
 
 		vec3_t direction;
 		math::vector_angle( velocity, direction );
@@ -465,7 +530,7 @@ void c_ragebot::quickstop( C_BaseCombatWeapon *local_weapon ) {
 		math::angle_to_vector( direction, forward );
 		vec3_t negated_direction = forward * -speed;
 
-		float factor = std::max( negated_direction.x, negated_direction.y ) / 450.f;
+		const float factor = std::max( negated_direction.x, negated_direction.y ) / 450.f;
 		negated_direction *= factor;
 
 		m_cmd->m_forwardmove = negated_direction.x;
@@ -473,11 +538,21 @@ void c_ragebot::quickstop( C_BaseCombatWeapon *local_weapon ) {
 	}
 }
 
-bool c_ragebot::is_valid( C_CSPlayer *player ){
-	if( !player || player->IsDormant() )
+void c_ragebot::auto_revolver( c_base_combat_weapon *local_weapon, c_user_cmd *cmd ) {
+	if( !local_weapon || local_weapon->item_index( ) != WEAPON_REVOLVER )
+		return;
+
+	if( !( TIME_TO_TICKS( g_csgo.m_global_vars->m_cur_time - local_weapon->ready_time( ) ) <= -1 ) )
+		return;
+
+	cmd->m_buttons |= IN_ATTACK;
+}
+
+bool c_ragebot::is_valid( c_csplayer *player ) {
+	if( !player || player->is_dormant( ) )
 		return false;
 
-	if( !player->alive() || player->flags( ) & FL_FROZEN )
+	if( !player->alive( ) || player->flags( ) & FL_FROZEN )
 		return false;
 
 	if( player->team( ) == g_cl.m_local->team( ) && !g_vars.rage.teammate )

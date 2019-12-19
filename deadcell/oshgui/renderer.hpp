@@ -6,9 +6,9 @@ namespace renderer {
 		FONT_VERDANA_BOLD_7PX,
 		FONT_04B03_6PX,
 		FONT_PIXELTYPE_7PX,
-		FONT_LUCIDA_CONSOLE,
+		FONT_LUCIDA_CONSOLE_7PX,
 		FONT_MARLETT_45PX,
-		FONT_VERDANA_20PX,
+		FONT_ENHANCE_9PX,
 		FONT_MAX
 	};
 
@@ -21,21 +21,16 @@ namespace renderer {
 	};
 
 	class c_renderer {
-	private:
-		std::unique_ptr< OSHGui::Drawing::Direct3D9Renderer > m_renderer;
-		ulong_t m_old_color_write_enable;
-
 	public:
-		OSHGui::Application *m_instance;
-		OSHGui::Drawing::GeometryBufferPtr m_geometry;
 		OSHGui::Drawing::RenderTargetPtr m_render_target;
+		OSHGui::Drawing::GeometryBufferPtr m_geometry;
 		std::vector< OSHGui::Drawing::FontPtr > m_fonts;
 
 		c_renderer();
-		void init( IDirect3DDevice9 *device );
+		void init( IDirect3DDevice9Ex *device );
 
-		void start_drawing( IDirect3DDevice9 *device );
-		void end_drawing( IDirect3DDevice9 *device ) const;
+		void start_drawing( );
+		void end_drawing( ) const;
 
 		// drawing.
 		void rect( const OSHGui::Drawing::Color &color, int x, int y, int width, int height ) const;

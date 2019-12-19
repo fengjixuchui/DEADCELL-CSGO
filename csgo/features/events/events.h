@@ -1,17 +1,17 @@
 #pragma once
-#include "../../inc.hpp"
+#include "../../inc.h"
 
-class c_event_listener : public IGameEventListener2 {
+class c_event_listener : public i_game_event_listener {
 public:
 	c_event_listener( );
 	~c_event_listener( );
 
-	void setup( );
-	static void remove( );
+	bool setup( );
+	bool remove( );
 
-	void FireGameEvent( IGameEvent *m_event ) override;
+	void fire_game_event( i_game_event *m_event ) override;
 
-	int GetEventDebugID( ) override {
+	int get_event_debug_id( ) override {
 		return 0x2A;
 	};
 private:

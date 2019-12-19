@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define   DISPSURF_FLAG_SURFACE           (1<<0)
 #define   DISPSURF_FLAG_WALKABLE          (1<<1)
@@ -137,26 +137,26 @@ struct mstudioseqdesc_t;
 struct mstudiobodyparts_t;
 struct mstudiotexture_t;
 struct virtualmodel_t;
-class Quaternion;
+class quaternion;
 
-class RadianEuler
+class radian_euler
 {
 public:
-	RadianEuler( void )							{ }
-	RadianEuler( float X, float Y, float Z )		{ x = X; y = Y; z = Z; }
-	RadianEuler( Quaternion const &q );	// evil auto type promotion!!!
-	RadianEuler( Angle_t const &angles );	// evil auto type promotion!!!
+	radian_euler( void )							{ }
+	radian_euler( float X, float Y, float Z )		{ x = X; y = Y; z = Z; }
+	radian_euler( quaternion const &q );	// evil auto type promotion!!!
+	radian_euler( Angle_t const &angles );	// evil auto type promotion!!!
 
 											// Initialization
-	inline void Init( float ix = 0.0f, float iy = 0.0f, float iz = 0.0f )	{ x = ix; y = iy; z = iz; }
+	inline void init( float ix = 0.0f, float iy = 0.0f, float iz = 0.0f )	{ x = ix; y = iy; z = iz; }
 
 	//	conversion to qangle
-	Angle_t ToQAngle( void ) const;
-	bool IsValid() const;
-	void Invalidate();
+	Angle_t to_angle( void ) const;
+	bool is_valid() const;
+	void invalidate();
 
-	inline float *Base() { return &x; }
-	inline const float *Base() const { return &x; }
+	inline float *base() { return &x; }
+	inline const float *base() const { return &x; }
 
 	// array access...
 	float operator[]( int i ) const;
@@ -165,23 +165,23 @@ public:
 	float x, y, z;
 };
 
-class Quaternion				// same data-layout as engine's vec4_t,
+class quaternion				// same data-layout as engine's vec4_t,
 {								//		which is a float[4]
 public:
-	inline Quaternion( void )	{}
-	inline Quaternion( float ix, float iy, float iz, float iw ) : x( ix ), y( iy ), z( iz ), w( iw ) { }
-	inline Quaternion( RadianEuler const &angle );	// evil auto type promotion!!!
+	inline quaternion( void )	{}
+	inline quaternion( float ix, float iy, float iz, float iw ) : x( ix ), y( iy ), z( iz ), w( iw ) { }
+	inline quaternion( radian_euler const &angle );	// evil auto type promotion!!!
 
 	inline void Init( float ix = 0.0f, float iy = 0.0f, float iz = 0.0f, float iw = 0.0f )	{ x = ix; y = iy; z = iz; w = iw; }
 
-	bool IsValid() const;
-	void Invalidate();
+	bool is_valid() const;
+	void invalidate();
 
-	bool operator==( const Quaternion &src ) const;
-	bool operator!=( const Quaternion &src ) const;
+	bool operator==( const quaternion &src ) const;
+	bool operator!=( const quaternion &src ) const;
 
-	float* Base() { return ( float* )this; }
-	const float* Base() const { return ( float* )this; }
+	float* base() { return ( float* )this; }
+	const float* base() const { return ( float* )this; }
 
 	// array access...
 	float operator[]( int i ) const;
@@ -190,21 +190,21 @@ public:
 	float x, y, z, w;
 };
 
-class __declspec( align( 16 ) ) QuaternionAligned : public Quaternion
+class __declspec( align( 16 ) ) quaternion_aligned : public quaternion
 {
 public:
-	inline QuaternionAligned( void ) {};
-	inline QuaternionAligned( float X, float Y, float Z, float W )
+	inline quaternion_aligned( void ) {};
+	inline quaternion_aligned( float X, float Y, float Z, float W )
 	{
 		Init( X, Y, Z, W );
 	}
 public:
-	explicit QuaternionAligned( const Quaternion &vOther )
+	explicit quaternion_aligned( const quaternion &vOther )
 	{
 		Init( vOther.x, vOther.y, vOther.z, vOther.w );
 	}
 
-	QuaternionAligned& operator=( const Quaternion &vOther )
+	quaternion_aligned& operator=( const quaternion &vOther )
 	{
 		Init( vOther.x, vOther.y, vOther.z, vOther.w );
 		return *this;
@@ -252,14 +252,14 @@ struct mstudiobone_t {
 
 												// default values
 	vec3_t				pos;
-	Quaternion			quat;
-	RadianEuler			rot;
+	quaternion			quat;
+	radian_euler			rot;
 	// compression scale
 	vec3_t				posscale;
 	vec3_t				rotscale;
 
 	matrix3x4_t			poseToBone;
-	Quaternion			qAlignment;
+	quaternion			qAlignment;
 	int					flags;
 	int					proctype;
 	int					procindex;		// procedural rule
@@ -291,7 +291,7 @@ struct studiohdr_t {
 
 	long				checksum;		// this has to be the same in the phy and vtx files to load!
 
-	inline const char *	pszName( void ) const { return name; }
+	inline const char *	psz_name( void ) const { return name; }
 	char				name[ 64 ];
 
 	int					length;
@@ -310,28 +310,28 @@ struct studiohdr_t {
 
 	int					numbones;			// bones
 	int					boneindex;
-	inline mstudiobone_t *pBone( int i ) const { Assert( i >= 0 && i < numbones ); return ( mstudiobone_t * )( ( ( byte * )this ) + boneindex ) + i; };
-	int					RemapSeqBone( int iSequence, int iLocalBone ) const;	// maps local sequence bone to global bone
-	int					RemapAnimBone( int iAnim, int iLocalBone ) const;		// maps local animations bone to global bone
+	inline mstudiobone_t *bone( int i ) const { Assert( i >= 0 && i < numbones ); return ( mstudiobone_t * )( ( ( byte * )this ) + boneindex ) + i; };
+	int					remap_seq_bone( int iSequence, int iLocalBone ) const;	// maps local sequence bone to global bone
+	int					remap_anim_bone( int iAnim, int iLocalBone ) const;		// maps local animations bone to global bone
 
 	int					numbonecontrollers;		// bone controllers
 	int					bonecontrollerindex;
-	inline mstudiobonecontroller_t *pBonecontroller( int i ) const { Assert( i >= 0 && i < numbonecontrollers ); return ( mstudiobonecontroller_t * )( ( ( byte * )this ) + bonecontrollerindex ) + i; };
+	inline mstudiobonecontroller_t *bonecontroller( int i ) const { Assert( i >= 0 && i < numbonecontrollers ); return ( mstudiobonecontroller_t * )( ( ( byte * )this ) + bonecontrollerindex ) + i; };
 
 	int					numhitboxsets;
 	int					hitboxsetindex;
 
 	// Look up hitbox set by index
-	mstudiohitboxset_t	*pHitboxSet( int i ) const
+	mstudiohitboxset_t	*hitbox_set( int i ) const
 	{
 		Assert( i >= 0 && i < numhitboxsets );
 		return ( mstudiohitboxset_t * )( ( ( byte * )this ) + hitboxsetindex ) + i;
 	};
 
 	// Calls through to hitbox to determine size of specified set
-	inline mstudiobbox_t *pHitbox( int i, int set ) const
+	inline mstudiobbox_t *hitbox( int i, int set ) const
 	{
-		mstudiohitboxset_t const *s = pHitboxSet( set );
+		mstudiohitboxset_t const *s = hitbox_set( set );
 		if( !s )
 			return NULL;
 
@@ -341,7 +341,7 @@ struct studiohdr_t {
 	// Calls through to set to get hitbox count for set
 	inline int			iHitboxCount( int set ) const
 	{
-		mstudiohitboxset_t const *s = pHitboxSet( set );
+		mstudiohitboxset_t const *s = hitbox_set( set );
 		if( !s )
 			return 0;
 
@@ -352,55 +352,55 @@ struct studiohdr_t {
 	//private:
 	int					numlocalanim;			// animations/poses
 	int					localanimindex;		// animation descriptions
-	inline mstudioanimdesc_t *pLocalAnimdesc( int i ) const { return NULL; };
+	inline mstudioanimdesc_t *local_animdesc( int i ) const { return NULL; };
 
 	int					numlocalseq;				// sequences
 	int					localseqindex;
-	inline mstudioseqdesc_t *pLocalSeqdesc( int i ) const { return NULL; };
+	inline mstudioseqdesc_t *local_seqdesc( int i ) const { return NULL; };
 
 	//public:
-	bool				SequencesAvailable() const
+	bool				sequences_available() const
 	{
 		return true;
 	}
 
-	int					GetNumSeq() const;
-	mstudioanimdesc_t	&pAnimdesc( int i ) const;
-	mstudioseqdesc_t	&pSeqdesc( int i ) const;
-	int					iRelativeAnim( int baseseq, int relanim ) const;	// maps seq local anim reference to global anim index
-	int					iRelativeSeq( int baseseq, int relseq ) const;		// maps seq local seq reference to global seq index
+	int					get_num_seq() const;
+	mstudioanimdesc_t	&animdesc( int i ) const;
+	mstudioseqdesc_t	&seqdesc( int i ) const;
+	int					relative_anim( int baseseq, int relanim ) const;	// maps seq local anim reference to global anim index
+	int					relative_seq( int baseseq, int relseq ) const;		// maps seq local seq reference to global seq index
 
 																			//private:
 	mutable int			activitylistversion;	// initialization flag - have the sequences been indexed?
 	mutable int			eventsindexed;
 	//public:
-	int					GetSequenceActivity( int iSequence );
-	void				SetSequenceActivity( int iSequence, int iActivity );
-	int					GetActivityListVersion( void );
-	void				SetActivityListVersion( int version ) const;
-	int					GetEventListVersion( void );
-	void				SetEventListVersion( int version );
+	int					get_sequence_activity( int iSequence );
+	void				set_sequence_activity( int iSequence, int iActivity );
+	int					get_activity_list_version( void );
+	void				set_activity_list_version( int version ) const;
+	int					get_event_list_version( void );
+	void				set_event_list_version( int version );
 
 	// raw textures
 	int					numtextures;
 	int					textureindex;
-	inline mstudiotexture_t *pTexture( int i ) const { return NULL; };
+	inline mstudiotexture_t *texture( int i ) const { return NULL; };
 
 
 	// raw textures search paths
 	int					numcdtextures;
 	int					cdtextureindex;
-	inline char			*pCdtexture( int i ) const { return ( ( ( char * )this ) + *( ( int * )( ( ( byte * )this ) + cdtextureindex ) + i ) ); };
+	inline char			*cdtexture( int i ) const { return ( ( ( char * )this ) + *( ( int * )( ( ( byte * )this ) + cdtextureindex ) + i ) ); };
 
 	// replaceable textures tables
 	int					numskinref;
 	int					numskinfamilies;
 	int					skinindex;
-	inline short		*pSkinref( int i ) const { return ( short * )( ( ( byte * )this ) + skinindex ) + i; };
+	inline short		*skinref( int i ) const { return ( short * )( ( ( byte * )this ) + skinindex ) + i; };
 
 	int					numbodyparts;
 	int					bodypartindex;
-	inline mstudiobodyparts_t	*pBodypart( int i ) const { return NULL; };
+	inline mstudiobodyparts_t	*bodypart( int i ) const { return NULL; };
 };
 
 struct CIncomingSequence {
@@ -417,14 +417,14 @@ struct CIncomingSequence {
 	float curtime;
 };
 
-enum class TraceType_t {
+enum class trace_type_t {
 	TRACE_EVERYTHING = 0,
 	TRACE_WORLD_ONLY,
 	TRACE_ENTITIES_ONLY,
 	TRACE_EVERYTHING_FILTER_PROPS,
 };
 
-enum OverrideType_t {
+enum override_type_t {
 	OVERRIDE_NORMAL = 0,
 	OVERRIDE_BUILD_SHADOWS,
 	OVERRIDE_DEPTH_WRITE,
@@ -552,7 +552,7 @@ struct SurfaceGameProps_t {
 	uint8_t climbable;
 };
 
-struct SurfaceData_t {
+struct surface_data_t {
 	SurfacePhysicsParams_t physics;
 	SurfaceAudioParams_t audio;
 	SurfaceSoundNames_t sounds;
@@ -689,7 +689,8 @@ enum Weapon {
 	WEAPON_MP9,
 	WEAPON_NOVA,
 	WEAPON_P250,
-	WEAPON_SCAR20 = 38,
+	WEAPON_SHIELD,
+	WEAPON_SCAR20,
 	WEAPON_SG558,
 	WEAPON_SSG08,
 	WEAPON_KNIFEGG,
@@ -719,6 +720,8 @@ enum Weapon {
 	WEAPON_FIREBOMB,
 	WEAPON_DIVERSION,
 	WEAPON_FRAG_GRENADE,
+	WEAPON_SNOWBALL,
+	WEAPON_BUMPMINE,
 	WEAPON_KNIFE_BAYONET = 500,
 	WEAPON_KNIFE_FLIP = 505,
 	WEAPON_KNIFE_GUT,
@@ -864,6 +867,8 @@ enum ClassID {
 	CBreachChargeProjectile,
 	CBreakableProp,
 	CBreakableSurface,
+	CBumpMine,
+	CBumpMineProjectile,
 	CC4,
 	CCascadeLight,
 	CChicken,
@@ -960,6 +965,7 @@ enum ClassID {
 	CPhysPropWeaponUpgrade,
 	CPlantedC4,
 	CPlasma,
+	CPlayerPing,
 	CPlayerResource,
 	CPointCamera,
 	CPointCommentaryNode,
@@ -987,6 +993,9 @@ enum ClassID {
 	CSmokeGrenade,
 	CSmokeGrenadeProjectile,
 	CSmokeStack,
+	CSnowball,
+	CSnowballPile,
+	CSnowballProjectile,
 	CSpatialEntity,
 	CSpotlightEnd,
 	CSprite,
@@ -1091,6 +1100,7 @@ enum ClassID {
 	CWeaponSG550,
 	CWeaponSG552,
 	CWeaponSG556,
+	CWeaponShield,
 	CWeaponSSG08,
 	CWeaponTaser,
 	CWeaponTec9,
@@ -1204,7 +1214,7 @@ enum ECstrike15UserMessages {
 	CS_UM_GlowPropTurnOff = 60,
 };
 
-struct ModelRenderInfo_t {
+struct model_render_info_t {
 	vec3_t m_origin;
 	vec3_t m_angles;
 	char pad_0x0001[0x4];
@@ -1221,26 +1231,7 @@ struct ModelRenderInfo_t {
 	unsigned short m_instance;
 };
 
-class CFlashLightEffect {
-public:
-	bool m_bIsOn; //0x0000 
-	char pad_0x0001[0x3]; //0x0001
-	int m_nEntIndex; //0x0004 
-	WORD m_FlashLightHandle; //0x0008 
-	char pad_0x000A[0x2]; //0x000A
-	float m_flMuzzleFlashBrightness; //0x000C 
-	float m_flFov; //0x0010 
-	float m_flFarZ; //0x0014 
-	float m_flLinearAtten; //0x0018 
-	bool m_bCastsShadows; //0x001C 
-	char pad_0x001D[0x3]; //0x001D
-	float m_flCurrentPullBackDist; //0x0020 
-	DWORD m_MuzzleFlashTexture; //0x0024 
-	DWORD m_FlashLightTexture; //0x0028 
-	char m_szTextureName[64]; //0x1559888 
-}; //Size=0x006C
-
-class AnimationLayer_t {
+class animation_layer_t {
 public:
 	PAD( 20 )
 	uint32_t m_nOrder;
@@ -1307,14 +1298,14 @@ struct MaterialSystem_Config_t {
 	PAD( 12 )
 };
 
-class INetChannel;
-class CClockDriftMgr
+class i_net_channel;
+class c_clock_drift_mgr
 {
 public:
-	float m_ClockOffsets[ 17 ];   //0x0000
-	uint32_t m_iCurClockOffset; //0x0044
-	uint32_t m_nServerTick;     //0x0048
-	uint32_t m_nClientTick;     //0x004C
+	float m_clock_offsets[ 17 ];   //0x0000
+	uint32_t m_cur_clock_offset; //0x0044
+	uint32_t m_server_tick;     //0x0048
+	uint32_t m_client_tick;     //0x004C
 }; //Size: 0x0050
 
 class C_CSGameRulesProxy
@@ -1325,89 +1316,90 @@ public:
 	}
 };
 
-class ClientState {
+class client_state {
 public:
-	void ForceFullUpdate( ) {
-		m_nDeltaTick = uint32_t( -1 );
-	}
+public:
+	void force_full_update() {
+		*reinterpret_cast<int*>(uintptr_t(this) + 0x174) = -1;
+	};
 
-	char       pad_0000 [ 156 ];                 //0x0000
-	uint32_t   m_NetChannel;                     //0x009C
-	uint32_t   m_nChallengeNr;                   //0x00A0
-	char       pad_00A4 [ 100 ];                 //0x00A4
-	uint32_t   m_nSignonState;                   //0x0108
-	char       pad_010C [ 8 ];                   //0x010C
-	float      m_flNextCmdTime;                  //0x0114
-	uint32_t   m_nServerCount;                   //0x0118
-	uint32_t   m_nCurrentSequence;               //0x011C
-	char       pad_0120 [ 8 ];                   //0x0120
-	char       pad_0128 [ 80 ];                  //0x0128
-	uint32_t   m_nDeltaTick;                     //0x0178
-	bool       m_bPaused;                        //0x017C
-	char       pad_017D [ 3 ];                   //0x017D
-	uint32_t   m_nViewEntity;                    //0x0180
-	uint32_t   m_nPlayerSlot;                    //0x0184
-	char       m_szLevelName [ 260 ];            //0x0188
-	char       m_szLevelNameShort [ 40 ];        //0x028C
-	char       m_szGroupName [ 40 ];             //0x02B4
-	char       pad_02DC [ 52 ];                  //0x02DC
-	uint32_t   m_nMaxClients;                    //0x0310
-	char       pad_0314 [ 18820 ];               //0x0314
-	float      m_flLastServerTickTime;           //0x4C98
-	bool       m_nInSimulation;                  //0x4C9C
-	char       pad_4C9D [ 3 ];                   //0x4C9D
-	uint32_t   m_nOldTickCount;                  //0x4CA0
-	float      m_tickRemainder;                  //0x4CA4
-	float      m_frameTime;                      //0x4CA8
-	uint32_t   m_nLastOutgoingCommand;           //0x4CAC
-	uint32_t   m_nChokedCommands;                //0x4CB0
-	uint32_t   m_nLastAcknowledgedCommand;       //0x4CB4
-	uint32_t   m_nCommandAcknowledged;           //0x4CB8
-	uint32_t   m_nSoundSequence;                 //0x4CBC
-	char	   pad_4CC0 [ 80 ];                  //0x4CC0
-	vec3_t     m_vecViewAngles;                  //0x4D10
+	char pad_0000[156];             //0x0000
+	i_net_channel* m_net_channel;          //0x009C
+	uint32_t m_challenge_nr;        //0x00A0
+	char pad_00A4[100];             //0x00A4
+	uint32_t m_signon_state;        //0x0108
+	char pad_010C[8];               //0x010C
+	float m_next_cmd_time;          //0x0114
+	uint32_t m_server_count;        //0x0118
+	uint32_t m_current_sequence;    //0x011C
+	char pad_0120[8];               //0x0120
+	c_clock_drift_mgr m_clock_drift_mgr; //0x0128
+	uint32_t m_delta_tick;          //0x0178
+	bool m_paused;                 //0x017C
+	char pad_017D[3];               //0x017D
+	uint32_t m_view_entity;         //0x0180
+	uint32_t m_player_slot;         //0x0184
+	char m_level_name[260];        //0x0188
+	char m_level_name_short[80];    //0x028C
+	char m_group_name[80];         //0x02DC
+	char pad_032С[92];				//0x032С
+	uint32_t m_max_clients;         //0x0388
+	char pad_0314[18820];           //0x0314
+	float m_last_server_tick_time;   //0x4C98
+	bool m_insimulation;              //0x4C9C
+	char pad_4C9D[3];               //0x4C9D
+	uint32_t m_oldtickcount;          //0x4CA0
+	float m_tick_remainder;          //0x4CA4
+	float m_frame_time;              //0x4CA8
+	uint32_t m_last_outgoing_command;//0x4CAC
+	uint32_t m_choked_commands;     //0x4CB0
+	uint32_t m_last_command_ack;     //0x4CB4
+	uint32_t m_command_ack;			//0x4CB8
+	uint32_t m_sound_sequence;      //0x4CBC
+	char pad_4CC0[80];              //0x4CC0
+	vec3_t viewangles;              //0x4D10
 };
 
-class IMemAlloc
+class i_mem_alloc
 {
 public:
 	// Release versions
-	virtual void *Alloc(size_t nSize) = 0;
-	virtual void *Realloc(void *pMem, size_t nSize) = 0;
-	virtual void  Free(void *pMem) = 0;
+	virtual void *alloc(size_t nSize) = 0;
+	virtual void *realloc(void *pMem, size_t nSize) = 0;
+	virtual void  free(void *pMem) = 0;
 	virtual void *Expand_NoLongerSupported(void *pMem, size_t nSize) = 0;
 
 	// Debug versions
-	virtual void *Alloc(size_t nSize, const char *pFileName, int nLine) = 0;
-	virtual void *Realloc(void *pMem, size_t nSize, const char *pFileName, int nLine) = 0;
-	virtual void  Free(void *pMem, const char *pFileName, int nLine) = 0;
+	virtual void *alloc(size_t nSize, const char *pFileName, int nLine) = 0;
+	virtual void *realloc(void *pMem, size_t nSize, const char *pFileName, int nLine) = 0;
+	virtual void  free(void *pMem, const char *pFileName, int nLine) = 0;
 	virtual void *Expand_NoLongerSupported(void *pMem, size_t nSize, const char *pFileName, int nLine) = 0;
 
 	// Returns size of a particular allocation
-	virtual size_t GetSize(void *pMem) = 0;
+	virtual size_t get_size(void *pMem) = 0;
 
 	// Force file + line information for an allocation
-	virtual void PushAllocDbgInfo(const char *pFileName, int nLine) = 0;
-	virtual void PopAllocDbgInfo() = 0;
+	virtual void push_alloc_dbg_info(const char *pFileName, int nLine) = 0;
+	virtual void pop_alloc_dbg_info() = 0;
 
-	virtual long CrtSetBreakAlloc(long lNewBreakAlloc) = 0;
-	virtual	int CrtSetReportMode(int nReportType, int nReportMode) = 0;
-	virtual int CrtIsValidHeapPointer(const void *pMem) = 0;
-	virtual int CrtIsValidPointer(const void *pMem, unsigned int size, int access) = 0;
-	virtual int CrtCheckMemory(void) = 0;
-	virtual int CrtSetDbgFlag(int nNewFlag) = 0;
-	virtual void CrtMemCheckpoint(_CrtMemState *pState) = 0;
+	virtual long crt_set_break_alloc(long lNewBreakAlloc) = 0;
+	virtual	int crt_set_report_mode(int nReportType, int nReportMode) = 0;
+	virtual int crt_is_valid_heap_pointer(const void *pMem) = 0;
+	virtual int crt_is_valid_pointer(const void *pMem, unsigned int size, int access) = 0;
+	virtual int crt_check_memory(void) = 0;
+	virtual int crt_set_dbg_flag(int nNewFlag) = 0;
+	virtual void crt_mem_checkpoint(_CrtMemState *pState) = 0;
 	virtual int heapchk() = 0;
 
-	virtual void DumpStats() = 0;
-	virtual void DumpStatsFileBase(char const *pchFileBase) = 0;
+	virtual void dump_stats() = 0;
+	virtual void dump_stats_file_base(char const *pchFileBase) = 0;
 };
 
-typedef unsigned short MDLHandle_t;
+typedef unsigned short mdl_handle_t;
 
 enum
 {
-	MDLHANDLE_INVALID = (MDLHandle_t)~0
+	MDLHANDLE_INVALID = (mdl_handle_t)~0
 };
 
 enum MDLCacheDataType_t
@@ -1424,14 +1416,14 @@ enum MDLCacheDataType_t
 	MDLCACHE_DECODEDANIMBLOCK,
 };
 
-class IMDLCacheNotify
+class i_mdl_cache_notify
 {
 public:
 	// Called right after the data is loaded
-	virtual void OnDataLoaded(MDLCacheDataType_t type, MDLHandle_t handle) = 0;
+	virtual void on_data_loaded(MDLCacheDataType_t type, mdl_handle_t handle) = 0;
 
 	// Called right before the data is unloaded
-	virtual void OnDataUnloaded(MDLCacheDataType_t type, MDLHandle_t handle) = 0;
+	virtual void on_data_unloaded(MDLCacheDataType_t type, mdl_handle_t handle) = 0;
 };
 
 enum MDLCacheFlush_t
@@ -1453,93 +1445,127 @@ struct virtualmodel_t;
 struct vertexFileHeader_t;
 struct studiohwdata_t;
 
-class IMDLCache
+class i_mdl_cache
 {
 public:
 	// Used to install callbacks for when data is loaded + unloaded
 	// Returns the prior notify
-	virtual void SetCacheNotify(IMDLCacheNotify *pNotify) = 0;
+	virtual void set_cache_notify(i_mdl_cache_notify *pNotify) = 0;
 
 	// NOTE: This assumes the "GAME" path if you don't use
 	// the UNC method of specifying files. This will also increment
 	// the reference count of the MDL
-	virtual MDLHandle_t FindMDL(const char *pMDLRelativePath) = 0;
+	virtual mdl_handle_t find_mdl(const char *pMDLRelativePath) = 0;
 
 	// Reference counting
-	virtual int AddRef(MDLHandle_t handle) = 0;
-	virtual int Release(MDLHandle_t handle) = 0;
-	virtual int GetRef(MDLHandle_t handle) = 0;
+	virtual int add_ref(mdl_handle_t handle) = 0;
+	virtual int release(mdl_handle_t handle) = 0;
+	virtual int get_ref(mdl_handle_t handle) = 0;
 
 	// Gets at the various data associated with a MDL
-	virtual studiohdr_t *GetStudioHdr(MDLHandle_t handle) = 0;
-	virtual studiohwdata_t *GetHardwareData(MDLHandle_t handle) = 0;
-	virtual vcollide_t *GetVCollide(MDLHandle_t handle) = 0;
-	virtual unsigned char *GetAnimBlock(MDLHandle_t handle, int nBlock) = 0;
-	virtual virtualmodel_t *GetVirtualModel(MDLHandle_t handle) = 0;
-	virtual int GetAutoplayList(MDLHandle_t handle, unsigned short **pOut) = 0;
-	virtual vertexFileHeader_t *GetVertexData(MDLHandle_t handle) = 0;
+	virtual studiohdr_t *get_studio_hdr(mdl_handle_t handle) = 0;
+	virtual studiohwdata_t *get_hardware_data(mdl_handle_t handle) = 0;
+	virtual vcollide_t *get_v_collide(mdl_handle_t handle) = 0;
+	virtual unsigned char *get_anim_block(mdl_handle_t handle, int nBlock) = 0;
+	virtual virtualmodel_t *get_virtual_model(mdl_handle_t handle) = 0;
+	virtual int get_autoplay_list(mdl_handle_t handle, unsigned short **pOut) = 0;
+	virtual vertexFileHeader_t *get_vertex_data(mdl_handle_t handle) = 0;
 
 	// Brings all data associated with an MDL into memory
-	virtual void TouchAllData(MDLHandle_t handle) = 0;
+	virtual void touch_all_data(mdl_handle_t handle) = 0;
 
 	// Gets/sets user data associated with the MDL
-	virtual void SetUserData(MDLHandle_t handle, void* pData) = 0;
-	virtual void *GetUserData(MDLHandle_t handle) = 0;
+	virtual void set_user_data(mdl_handle_t handle, void* pData) = 0;
+	virtual void *get_user_data(mdl_handle_t handle) = 0;
 
 	// Is this MDL using the error model?
-	virtual bool IsErrorModel(MDLHandle_t handle) = 0;
+	virtual bool is_error_model(mdl_handle_t handle) = 0;
 
 	// Flushes the cache, force a full discard
-	virtual void Flush(MDLCacheFlush_t nFlushFlags = MDLCACHE_FLUSH_ALL) = 0;
+	virtual void flush(MDLCacheFlush_t nFlushFlags = MDLCACHE_FLUSH_ALL) = 0;
 
 	// Flushes a particular model out of memory
-	virtual void Flush(MDLHandle_t handle, int nFlushFlags = MDLCACHE_FLUSH_ALL) = 0;
+	virtual void flush(mdl_handle_t handle, int nFlushFlags = MDLCACHE_FLUSH_ALL) = 0;
 
 	// Returns the name of the model (its relative path)
-	virtual const char *GetModelName(MDLHandle_t handle) = 0;
+	virtual const char *get_model_name(mdl_handle_t handle) = 0;
 
 	// faster access when you already have the studiohdr
-	virtual virtualmodel_t *GetVirtualModelFast(const studiohdr_t *pStudioHdr, MDLHandle_t handle) = 0;
+	virtual virtualmodel_t *get_virtual_model_fast(const studiohdr_t *pStudioHdr, mdl_handle_t handle) = 0;
 
 	// all cache entries that subsequently allocated or successfully checked
 	// are considered "locked" and will not be freed when additional memory is needed
-	virtual void BeginLock() = 0;
+	virtual void begin_lock() = 0;
 
 	// reset all protected blocks to normal
-	virtual void EndLock() = 0;
+	virtual void end_lock() = 0;
 
 	// returns a pointer to a counter that is incremented every time the cache has been out of the locked state (EVIL)
-	virtual int *GetFrameUnlockCounterPtrOLD() = 0;
+	virtual int *get_frame_unlock_counter_ptr_old() = 0;
 
 	// Finish all pending async operations
-	virtual void FinishPendingLoads() = 0;
+	virtual void finish_pending_loads() = 0;
 
-	virtual vcollide_t *GetVCollideEx(MDLHandle_t handle, bool synchronousLoad = true) = 0;
-	virtual bool GetVCollideSize(MDLHandle_t handle, int *pVCollideSize) = 0;
+	virtual vcollide_t *get_v_collide_ex(mdl_handle_t handle, bool synchronousLoad = true) = 0;
+	virtual bool get_v_collide_size(mdl_handle_t handle, int *pVCollideSize) = 0;
 
-	virtual bool GetAsyncLoad(MDLCacheDataType_t type) = 0;
-	virtual bool SetAsyncLoad(MDLCacheDataType_t type, bool bAsync) = 0;
+	virtual bool get_async_load(MDLCacheDataType_t type) = 0;
+	virtual bool set_async_load(MDLCacheDataType_t type, bool bAsync) = 0;
 
-	virtual void BeginMapLoad() = 0;
-	virtual void EndMapLoad() = 0;
-	virtual void MarkAsLoaded(MDLHandle_t handle) = 0;
+	virtual void begin_map_load() = 0;
+	virtual void end_map_load() = 0;
+	virtual void mark_as_loaded(mdl_handle_t handle) = 0;
 
-	virtual void InitPreloadData(bool rebuild) = 0;
-	virtual void ShutdownPreloadData() = 0;
+	virtual void init_preload_data(bool rebuild) = 0;
+	virtual void shutdown_preload_data() = 0;
 
-	virtual bool IsDataLoaded(MDLHandle_t handle, MDLCacheDataType_t type) = 0;
+	virtual bool is_data_loaded(mdl_handle_t handle, MDLCacheDataType_t type) = 0;
 
-	virtual int *GetFrameUnlockCounterPtr(MDLCacheDataType_t type) = 0;
+	virtual int *get_frame_unlock_counter_ptr(MDLCacheDataType_t type) = 0;
 
-	virtual studiohdr_t *LockStudioHdr(MDLHandle_t handle) = 0;
-	virtual void UnlockStudioHdr(MDLHandle_t handle) = 0;
+	virtual studiohdr_t *lock_studio_hdr(mdl_handle_t handle) = 0;
+	virtual void unlock_studio_hdr(mdl_handle_t handle) = 0;
 
-	virtual bool PreloadModel(MDLHandle_t handle) = 0;
+	virtual bool preload_model(mdl_handle_t handle) = 0;
 
 	// Hammer uses this. If a model has an error loading in GetStudioHdr, then it is flagged
 	// as an error model and any further attempts to load it will just get the error model.
 	// That is, until you call this function. Then it will load the correct model.
-	virtual void ResetErrorModelStatus(MDLHandle_t handle) = 0;
+	virtual void reset_error_model_status(mdl_handle_t handle) = 0;
 
-	virtual void MarkFrame() = 0;
+	virtual void mark_frame() = 0;
+};
+
+class c_flashlight_effect {
+public:
+	bool m_is_on; //0x0000 
+	char pad_0x0001[ 0x3 ]; //0x0001
+	int m_idx; //0x0004 
+	WORD m_handle; //0x0008 
+	char pad_0x000A[ 0x2 ]; //0x000A
+	float m_muzzle_flash_brightness; //0x000C 
+	float m_fov; //0x0010 
+	float m_far_z; //0x0014 
+	float m_linear_atten; //0x0018 
+	bool m_casts_shadow; //0x001C 
+	char pad_0x001D[ 0x3 ]; //0x001D
+	float m_current_pullback_dist; //0x0020 
+	DWORD m_muzzle_flash_texture; //0x0024 
+	DWORD m_texture; //0x0028 
+	char m_texture_name[ 64 ]; //0x1559888 
+}; //Size=0x006C
+
+class var_map_entry_t {
+public:
+	unsigned short type;
+	unsigned short m_needs_to_interpolate;	// Set to false when this var doesn't
+											// need Interpolate() called on it anymore.
+	void *data;
+	void *watcher;
+};
+
+struct var_mapping_t {
+	c_utl_vector< var_map_entry_t > m_entries;
+	int m_interpolated_entries;
+	float m_interpolation_time;
 };

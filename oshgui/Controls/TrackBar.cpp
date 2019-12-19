@@ -6,6 +6,8 @@
 * See license in OSHGui.hpp
 */
 
+#pragma warning( disable : 4101 ) // unreferenced local variable
+
 #include "TrackBar.hpp"
 #include "Label.hpp"
 #include "../Misc/Exceptions.hpp"
@@ -159,7 +161,7 @@ namespace OSHGui
 	void TrackBar::SetValueInternal( float value )
 	{
 		try { // epic bandaid fix.
-			std::stringstream string_stream;
+			std::ostringstream string_stream;
 
 			pixelsPerTick_ = (float)( GetWidth() - SliderSize.Width ) / ( ( maximum_ - minimum_ ) / tickFrequency_ );
 
@@ -169,8 +171,8 @@ namespace OSHGui
 			if( value > maximum_ - minimum_ )
 				value = maximum_ - minimum_;
 
-			string_stream << std::fixed << std::setprecision( precision_ ) << value + minimum_ << appendText_;
-			label_value_->SetText( string_stream.str() );
+			string_stream << std::fixed << std::setprecision( precision_ ) << value + minimum_ << appendText_.c_str( );
+			label_value_->SetText( string_stream.str( ) );
 
 			if( value_ != value ) {
 				value_ = value;
@@ -187,8 +189,8 @@ namespace OSHGui
 
 			label_value_->SetLocation( Drawing::PointF( sliderLocation_.Left - label_value_->GetWidth() / 2 + 5, 8 ) );
 		}
-		catch ( ... ) {
-
+		catch( const std::exception &ex ) {
+			_RPTF0( _CRT_ERROR, ex.what( ) );
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -221,8 +223,20 @@ namespace OSHGui
 		g.FillRectangleGradient( Color::FromARGB( 255, 18, 18, 24 ), PointF( 4, DefaultTickOffset ), SizeF( 160, 7 ) );
 		g.FillRectangleGradient( ColorRectangle( color, Color::FromARGB( 255, 55, 55, 62 ) ), PointF( 5, DefaultTickOffset + 1 ), SizeF( 158, 5 ) );
 
-		if( value_ )
+		if( value_ ) {
 			g.FillRectangleGradient( ColorRectangle( GetBackColor(), GetBackColor() - Color::FromARGB( 0, 45, 40, 45 ) ), RectangleF( PointF( sliderLocation_.Left + 5, 8 ), SizeF( SliderSize.Width - sliderLocation_.Left - 8, 5 ) ) );
+		}
+
+		/*if( value_ != GetMinimum() ) {
+			g.DrawRectangle( OSHGui::Drawing::Color::FromARGB( 255, 105, 105, 112 ), RectangleF( -3, 10, 5, 1 ) );
+		}
+
+		if( value_ != GetMaximum() ) {
+			g.DrawRectangle( OSHGui::Drawing::Color::FromARGB( 255, 105, 105, 112 ), RectangleF( GetWidth() + 2, 8, 1, 5 ) );
+			g.DrawRectangle( OSHGui::Drawing::Color::FromARGB( 255, 105, 105, 112 ), RectangleF( GetWidth(), 10, 5, 1 ) );
+		}
+
+		g.DrawRectangle( OSHGui::Drawing::Color::FromARGB( 122, 255, 0, 0 ), absoluteLocation_.OffsetEx( 3, -8 ), Drawing::SizeF( 5, 5 ) );*/
 	}
 	//---------------------------------------------------------------------------
 	//Event-Handling
@@ -247,6 +261,8 @@ namespace OSHGui
 	{
 		Control::OnMouseClick( mouse );
 
+		
+
 		if( !drag_ )
 		{
 			HandleMouseEvent( mouse );
@@ -256,6 +272,10 @@ namespace OSHGui
 	void TrackBar::OnMouseMove( const MouseMessage &mouse )
 	{
 		Control::OnMouseMove( mouse );
+
+		if( Intersection::TestRectangle( absoluteLocation_.OffsetEx( 3, -8 ), Drawing::SizeF( 5, 5 ), mouse.GetLocation() ) ) {
+			SetValueInternal( --value_ );
+		}
 
 		if( drag_ )
 		{

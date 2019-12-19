@@ -5,62 +5,62 @@ c_animations g_anim;
 // never finished.
 
 void c_animations::init( ) {
-	g_csgo.m_entity_list->AddListenerEntity( this );
+	g_csgo.m_entity_list->add_listener_entity( this );
 }
 
 void c_animations::remove( ) {
-	g_csgo.m_entity_list->RemoveListenerEntity( this );
+	g_csgo.m_entity_list->remove_listener_entity( this );
 
 	for( int i = 0; i < 64; i++ ) {
-		if( m_track[ i ].m_hooked )
-			m_track[ i ].m_vmt->unhook_all( );
+		if( m_track.at( i ).m_hooked ) {
+			m_track.at( i ).m_vmt->unhook_all( );
+			m_track.at( i ).m_renderable_vmt->unhook_all( );
+		}
 	}
 }
 
-void c_animations::OnEntityCreated( C_BaseEntity *ent ) {
+void c_animations::on_entity_created( c_base_entity *ent ) {
 	if( !ent )
 		return;
 
-	int index = ent->GetIndex( );
-	if( index < 0 )
+	const int idx = ent->get_index( );
+	if( idx < 0 )
 		return;
 
-	ClientClass *cc = ent->GetClientClass( );
+	client_class *cc = ent->get_client_class( );
 	if( !cc )
 		return;
 
-	switch( cc->m_ClassID ) {
+	switch( cc->m_class_id ) {
 		case CCSPlayer: {
 
-			m_track[ index ].m_index = index;
-			m_track[ index ].m_vmt = std::make_unique< c_vmt >( ent );
-			m_track[ index ].m_vmt->hook_method( 193, animations::DoExtraBonesProcessing );
-			m_track[ index ].m_hooked = true;
-
+			m_track.at( idx ) = container_t( ent );
 			break;
 		}
-		default: {
-			return;
-		}
+		default:
+			break;
 	}
-
 }
 
-void c_animations::OnEntityDeleted( C_BaseEntity *ent ) {
+void c_animations::on_entity_deleted( c_base_entity *ent ) {
 	if( !ent )
 		return;
 
-	int index = ent->GetIndex( );
-	if( index < 0 )
+	int idx = ent->get_index( );
+	if( idx < 0 )
 		return;
 
-	auto it = std::find_if( m_track.begin( ), m_track.end( ), [ & ]( const container_t &data ) {
-		return data.m_index == index;
+	const auto it = std::find_if( m_track.begin( ), m_track.end( ), [ & ]( const container_t &data ) {
+		return data.m_idx == idx;
 	} );
 
 	if( it == m_track.end( ) )
 		return;
 
-	if( m_track[ it->m_index ].m_hooked )
-		m_track[ it->m_index ].m_vmt->unhook_all( );
+	if( m_track.at( it->m_idx ).m_hooked ){
+		m_track.at( it->m_idx ).m_vmt->unhook_all( );
+		m_track.at( it->m_idx ).m_renderable_vmt->unhook_all( );
+		m_track.at( it->m_idx ).m_hooked = false;
+	}
+		
 }

@@ -75,6 +75,9 @@
     <Filter Include="Header Files\Drawing\Direct3D11">
       <UniqueIdentifier>{e8fc3b17-f57f-4c14-8b8b-6a7a7c9d38bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Drawing\Direct3D9Ex">
+      <UniqueIdentifier>{4b2c0a40-3552-4452-b5da-ca5d7fb43dc8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Application.cpp">
@@ -281,21 +284,6 @@
     <ClCompile Include="..\..\Drawing\Direct3D8\Direct3D8X.cpp">
       <Filter>Source Files\Drawing\Direct3D8</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9GeometryBuffer.cpp">
-      <Filter>Source Files\Drawing\Direct3D9</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9Renderer.cpp">
-      <Filter>Source Files\Drawing\Direct3D9</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9Texture.cpp">
-      <Filter>Source Files\Drawing\Direct3D9</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9TextureTarget.cpp">
-      <Filter>Source Files\Drawing\Direct3D9</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9ViewportTarget.cpp">
-      <Filter>Source Files\Drawing\Direct3D9</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Drawing\Direct3D10\Direct3D10GeometryBuffer.cpp">
       <Filter>Source Files\Drawing\Direct3D10</Filter>
     </ClCompile>
@@ -346,6 +334,27 @@
     </ClCompile>
     <ClCompile Include="..\..\Controls\ComboList.cpp">
       <Filter>Source Files\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9GeometryBuffer.cpp">
+      <Filter>Source Files\Drawing\Direct3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9Renderer.cpp">
+      <Filter>Source Files\Drawing\Direct3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9Texture.cpp">
+      <Filter>Source Files\Drawing\Direct3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9TextureTarget.cpp">
+      <Filter>Source Files\Drawing\Direct3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9\Direct3D9ViewportTarget.cpp">
+      <Filter>Source Files\Drawing\Direct3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9Ex\Direct3D9ExRenderer.cpp">
+      <Filter>Source Files\Drawing\Direct3D9Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Drawing\Direct3D9Ex\Direct3D9ExTexture.cpp">
+      <Filter>Source Files\Drawing\Direct3D9Ex</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -640,24 +649,6 @@
     <ClInclude Include="..\..\Drawing\Direct3D8\Direct3D8X.hpp">
       <Filter>Header Files\Drawing\Direct3D8</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9GeometryBuffer.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9Renderer.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9RenderTarget.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9Texture.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9TextureTarget.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9ViewportTarget.hpp">
-      <Filter>Header Files\Drawing\Direct3D9</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Drawing\Direct3D10\Direct3D10GeometryBuffer.hpp">
       <Filter>Header Files\Drawing\Direct3D10</Filter>
     </ClInclude>
@@ -714,6 +705,30 @@
     </ClInclude>
     <ClInclude Include="..\..\Controls\ComboList.h">
       <Filter>Header Files\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9GeometryBuffer.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9Renderer.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9RenderTarget.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9Texture.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9TextureTarget.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9\Direct3D9ViewportTarget.hpp">
+      <Filter>Header Files\Drawing\Direct3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9Ex\Direct3D9ExRenderer.hpp">
+      <Filter>Source Files\Drawing\Direct3D9Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Drawing\Direct3D9Ex\Direct3D9ExTexture.hpp">
+      <Filter>Source Files\Drawing\Direct3D9Ex</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

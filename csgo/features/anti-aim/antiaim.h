@@ -1,19 +1,27 @@
 #pragma once
-#include "../../inc.hpp"
+#include "../../inc.h"
 #include "../misc/misc.h"
 #include "../autowall/autowall.h"
+#include "../chaiscript/chai_wrapper.hpp"
 
 class c_antiaim {
-	void ensure_sanity( CUserCmd *ucmd );
-	void modify_packets( CUserCmd *ucmd );
-	float best_head_yaw( );
+	vec3_t m_input = vec3_t{};
+	vec3_t m_stored_input = vec3_t{};
 
+	bool m_desync_next_tick;
+
+	bool allow(c_user_cmd *ucmd);
+	void adjust_yaw(c_user_cmd *ucmd);
+	void adjust_pitch(c_user_cmd *ucmd);
+
+	chai_wrapper yaw_aa;
+	chai_wrapper pitch_aa;
+	void chai_yaw(c_user_cmd *ucmd);
+	void chai_pitch(c_user_cmd * ucmd);
+
+	static float at_target();
 public:
-	float calculate_max_desync_angle( C_CSPlayer *local, CCSGOPlayerAnimState *anim_state );
-	void adjust_yaw( CUserCmd *ucmd );
-	void adjust_pitch( CUserCmd *ucmd );
-	void set_angles( CUserCmd *ucmd );
-	void manual( CUserCmd *ucmd );
+	void set_angles( c_user_cmd *ucmd );
 
 	vec3_t	m_real = vec3_t( );
 	vec3_t	m_fake = vec3_t( );

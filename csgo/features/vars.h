@@ -1,6 +1,6 @@
 #pragma once
 
-class vars {
+class c_vars {
 public:
 	struct rage {
 		int key;
@@ -8,6 +8,8 @@ public:
 		int target_selection;
 		float pointscale = 60.f;
 		bool prefer_bodyaim;
+		bool save_fps;
+		bool selectively_multipoint_records;
 		bool bodyaim_lethal;
 		int hitchance;
 		int min_dmg;
@@ -56,19 +58,22 @@ public:
 		bool objectives;
 		bool dormancy_fade;
 		bool grenade_pred;
-		bool spread_circle;
+		int visualize_spread;
 		bool hitmarker;
 		bool impact;
 		float impact_color[ 4 ] = { 255, 255, 0, 0 };
 		bool radar;
-		float spread_circle_color[ 4 ] = { 70, 113, 59, 198 };
+		float visualize_spread_color[ 4 ] = { 70, 113, 59, 198 };
 		struct chams{
 			bool teammates;
 			bool enabled;
 			bool twopass;
 			int type;
 			float alpha;
-			float vis_color[ 4 ] = { 220, 255, 0, 0 };
+			float reflectivity;
+			float luminance;
+			bool blend_scope;
+			float vis_color[ 4 ] = { 220, 206, 115, 136 };
 			float hid_color[ 4 ] = { 220, 255, 255, 255 };
 			bool local;
 			float local_col[ 4 ] = { 220, 206, 115, 136 };
@@ -76,10 +81,11 @@ public:
 		struct misc {
 			bool no_flash;
 			bool fog;
-			bool remove_scope;
+			int remove_scope;
+			bool remove_scope_zoom;
 			bool remove_blur;
 			float scope_color[ 4 ] = { 220, 0, 0, 0 };
-			bool remove_smoke;
+			int remove_smoke;
 		} misc;
 		struct extra {
 			bool speclist;
@@ -106,6 +112,7 @@ public:
 		bool thirdperson_dead;
 		bool thirdperson_grenade;
 		int thirdperson_key;
+		int flashlight_key;
 		bool autozeus;
 		bool log_damage;
 		bool log_purchases;
@@ -114,8 +121,11 @@ public:
 		bool fast_duck;
 		bool dangerzone_menu;
 		int hitmarker_sound;
-		bool clienthitboxes;
-		float duration = 2.f;
+		bool client_hitboxes;
+		float client_hitboxes_duration = 2.f;
+		bool bullet_impacts;
+		float bullet_impacts_duration = 4.f;
+		bool chaiscript_enabled;
 	} misc;
 	struct antiaim{
 		bool enabled;
@@ -127,6 +137,7 @@ public:
 		int right_override_key = 39;
 		int backwards_override_key = 40;
 		int reset_override_key = 38;
+		int side_switch_key;
 	} antiaim;
 	struct dangerzone{
 		int max_item_distance;
@@ -149,4 +160,4 @@ public:
 	} dz;
 };
 
-extern vars g_vars;
+extern c_vars g_vars;
